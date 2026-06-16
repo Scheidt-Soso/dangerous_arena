@@ -26,6 +26,15 @@ class Guerreiro extends Personagem
         return 'Guerreiro';
     }
 
+    public function getAtaques(): array
+    {
+        return [
+            ['nome' => 'Ataque Normal', 'multiplicador' => 1.0],
+            ['nome' => 'Golpe Pesado', 'multiplicador' => 2.0],
+            ['nome' => 'Corte Rapido', 'multiplicador' => 0.7],
+        ];
+    }
+
     public function ativarPosturaDefensiva(): void
     {
         $this->posturaDefensiva = true;

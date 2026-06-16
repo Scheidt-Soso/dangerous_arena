@@ -24,9 +24,19 @@ abstract class Personagem
     abstract protected function calcularDefesa(): int;
     abstract public function getClasse(): string;
 
-    public function atacar(Personagem $alvo): int
+    public function getAtaques(): array
     {
-        $danoBruto = $this->ataque + random_int(1, 6);
+        return [
+            ['nome' => 'Ataque Normal', 'multiplicador' => 1.0],
+            ['nome' => 'Ataque Forte', 'multiplicador' => 1.8],
+        ];
+    }
+
+    public function atacar(Personagem $alvo, int $indiceAtaque = 0): int
+    {
+        $ataques = $this->getAtaques();
+        $ataque = $ataques[$indiceAtaque] ?? $ataques[0];
+        $danoBruto = (int)($this->ataque * $ataque['multiplicador']) + random_int(1, 6);
         $danoFinal = $alvo->defender($danoBruto);
         return $danoFinal;
     }
