@@ -1,6 +1,6 @@
 <?php
 
-require_once 'Personagem.php';
+require_once 'Console.php';
 
 class Arena
 {
@@ -17,67 +17,35 @@ class Arena
         $this->logs = [];
     }
 
-    public function iniciarTorneio(): void
+    public function iniciarLuta(): void
     {
-        $vitoriasP1 = 0;
-        $vitoriasP2 = 0;
-        $rodada = 1;
-
-        $this->log("========================================");
-        $this->log("  DANGEROUS ARENA - MELHOR DE 3");
-        $this->log("========================================");
+        Console::limparTela();
+        $this->log("    ╔══════════════════════════════════════╗");
+        $this->log("    ║         ⚔  ARENA DE BATALHA  ⚔       ║");
+        $this->log("    ╠══════════════════════════════════════╣");
+        $this->log("    ║                                      ║");
+        $this->log("    ║    " . str_pad($this->p1->getNome() . " (" . $this->p1->getClasse() . ")", 36) . "║");
+        $this->log("    ║              VS                      ║");
+        $this->log("    ║    " . str_pad($this->p2->getNome() . " (" . $this->p2->getClasse() . ")", 36) . "║");
+        $this->log("    ║                                      ║");
+        $this->log("    ╠══════════════════════════════════════╣");
+        $this->log("    ║    " . str_pad("Level: " . $this->p1->getLevel(), 36) . "║");
+        $this->log("    ║    " . str_pad("Level: " . $this->p2->getLevel(), 36) . "║");
+        $this->log("    ╚══════════════════════════════════════╝");
         $this->log("");
-        $this->log("{$this->p1} vs {$this->p2}");
-        $this->log("");
 
-        while ($vitoriasP1 < 2 && $vitoriasP2 < 2) {
-            $this->log("=========== RODADA $rodada ===========");
-            $this->log("");
+        $vencedor = $this->iniciarBatalha(3);
 
-            $this->p1->gastarXp(10);
-            $this->p2->gastarXp(10);
-            $this->log("{$this->p1->getNome()} XP: {$this->p1->getXp()}");
-            $this->log("{$this->p2->getNome()} XP: {$this->p2->getXp()}");
-            $this->log("");
-
-            if ($rodada > 1) {
-                $this->p1->recuperarHp(0.5);
-                $this->p2->recuperarHp(0.5);
-                $this->log("HP recuperado parcialmente (50%)!");
-                $this->log("");
-            }
-
-            $vencedor = $this->iniciarBatalha();
-
-            if ($vencedor === 1) {
-                $vitoriasP1++;
-            } else {
-                $vitoriasP2++;
-            }
-
-            $this->log("");
-            $this->log("Placar: {$this->p1->getNome()} {$vitoriasP1} x {$vitoriasP2} {$this->p2->getNome()}");
-            $this->log("");
-
-            if ($vitoriasP1 < 2 && $vitoriasP2 < 2) {
-                echo "Pressione Enter para a proxima rodada...";
-                fgets(STDIN);
-                limparTela();
-            }
-
-            $rodada++;
-        }
-
-        $campeao = $vitoriasP1 > $vitoriasP2 ? $this->p1 : $this->p2;
+        $campeao = $vencedor === 1 ? $this->p1 : $this->p2;
         $this->animacaoVitoria($campeao);
     }
 
-    private function iniciarBatalha(): int
+    private function iniciarBatalha(int $maxTurnos): int
     {
         $this->turno = 1;
         $this->logs = [];
 
-        while ($this->p1->estaVivo() && $this->p2->estaVivo()) {
+        while ($this->p1->estaVivo() && $this->p2->estaVivo() && $this->turno <= $maxTurnos) {
             $this->executarTurno();
             $this->turno++;
         }
@@ -89,65 +57,98 @@ class Arena
 
     private function executarTurno(): void
     {
-        limparTela();
-
-        echo "--- Turno {$this->turno} ---\n\n";
-        echo $this->barraVida($this->p1) . "\n";
-        echo $this->barraVida($this->p2) . "\n\n";
-
-        $this->menuAtaque($this->p1, $this->p2);
+        $this->executarTurnoJogador($this->p1, $this->p2);
         if (!$this->p2->estaVivo()) {
             $this->log("{$this->p2->getNome()} foi derrotado!");
             return;
         }
 
-        echo "\nPressione Enter para passar o controle...";
-        fgets(STDIN);
-        limparTela();
+        Console::aguardarEnter("\nPressione Enter para passar o controle...");
+        Console::limparTela();
 
-        echo "--- Turno {$this->turno} ---\n\n";
-        echo $this->barraVida($this->p1) . "\n";
-        echo $this->barraVida($this->p2) . "\n\n";
-
-        $this->menuAtaque($this->p2, $this->p1);
+        $this->executarTurnoJogador($this->p2, $this->p1);
         if (!$this->p1->estaVivo()) {
             $this->log("{$this->p1->getNome()} foi derrotado!");
             return;
         }
 
-        echo "\nPressione Enter para passar o controle...";
-        fgets(STDIN);
+        Console::aguardarEnter("\nPressione Enter para passar o controle...");
+    }
+
+    private function executarTurnoJogador(Personagem $atacante, Personagem $defensor): void
+    {
+        Console::limparTela();
+
+        echo "--- Turno {$this->turno} ---\n\n";
+        echo $this->barraVida($this->p1) . "\n";
+        echo $this->barraVida($this->p2) . "\n\n";
+
+        echo "--- Vez de {$atacante->getNome()} ({$atacante->getClasse()}) ---\n";
+        echo "HP: {$atacante->getHp()}/{$atacante->getHpMaximo()} | ATK: {$atacante->getAtaque()} | DEF: {$atacante->getDefesa()} ({$atacante->getNomeDefesa()})\n";
+        echo "\n";
+
+        $this->menuAcao($atacante, $defensor);
+    }
+
+    private function menuAcao(Personagem $atacante, Personagem $defensor): void
+    {
+        echo "Escolha sua ação:\n";
+        echo "1 - Atacar\n";
+        echo "2 - Defender\n";
+
+        $opcoes = ['1', '2'];
+        if ($atacante->poderEspecialDisponivel()) {
+            $poder = $atacante->getPoderEspecial();
+            echo "3 - Poder Especial: {$poder['nome']} ({$poder['descricao']})\n";
+            $opcoes[] = '3';
+        }
+
+        $escolha = Console::lerOpcao("Digite o numero: ", $opcoes);
+
+        if ($escolha === '1') {
+            $this->menuAtaque($atacante, $defensor);
+        } elseif ($escolha === '2') {
+            $atacante->ativarDefesa();
+            $this->log("{$atacante->getNome()} assumiu postura defensiva! Defesa aumentada!");
+            echo "\n";
+        } elseif ($escolha === '3') {
+            $this->executarPoderEspecial($atacante, $defensor);
+        }
     }
 
     private function menuAtaque(Personagem $atacante, Personagem $defensor): void
     {
         $ataques = $atacante->getAtaques();
+        $qtd = count($ataques);
 
-        echo "--- Vez de {$atacante->getNome()} ({$atacante->getClasse()}) ---\n";
-        echo "HP: {$atacante->getHp()}/{$atacante->getHpMaximo()} | ATK: {$atacante->getAtaque()} | DEF: {$atacante->getDefesa()} | XP: {$atacante->getXp()}\n";
         echo "\nEscolha o ataque:\n";
-
         foreach ($ataques as $i => $ataque) {
-            $danoEstimado = (int)($atacante->getAtaque() * $ataque['multiplicador']);
-            echo ($i + 1) . " - {$ataque['nome']} (dano: ~{$danoEstimado})\n";
+            $danoEstimado = (int)($atacante->getAtaque() * $ataque->getMultiplicador());
+            echo ($i + 1) . " - {$ataque->getNome()} (dano: ~{$danoEstimado})\n";
         }
 
-        $opcoes = ['1', '2', '3'];
-        $escolha = (int) lerOpcao("Digite o numero: ", $opcoes) - 1;
+        $opcoes = range(1, $qtd);
+        $opcoesStr = array_map('strval', $opcoes);
+        $escolha = (int) Console::lerOpcao("Digite o numero: ", $opcoesStr) - 1;
 
         $dano = $atacante->atacar($defensor, $escolha);
-        $nomeAtaque = $ataques[$escolha]['nome'];
+        $nomeAtaque = $ataques[$escolha]->getNome();
 
         if ($dano > 0) {
             $this->log("{$atacante->getNome()} usou {$nomeAtaque} e causou {$dano} de dano em {$defensor->getNome()}!");
         }
 
-        if ($escolha > 0 && $atacante->getXp() < 50) {
-            $xpRoubado = 10;
-            $atacante->roubarXp($defensor, $xpRoubado);
-            $this->log("{$atacante->getNome()} roubou {$xpRoubado} XP de {$defensor->getNome()}!");
-        }
+        echo "\n";
+    }
 
+    private function executarPoderEspecial(Personagem $atacante, Personagem $defensor): void
+    {
+        $poder = $atacante->getPoderEspecial();
+        $dano = $atacante->usarPoderEspecial($defensor);
+        $this->log("{$atacante->getNome()} usou {$poder['nome']}!");
+        if ($dano > 0) {
+            $this->log("Causou {$dano} de dano em {$defensor->getNome()}!");
+        }
         echo "\n";
     }
 
@@ -178,19 +179,31 @@ class Arena
 
     private function animacaoVitoria(Personagem $campeao): void
     {
-        limparTela();
+        Console::limparTela();
         echo "\n\n\n";
 
+        $texto = $campeao->getNome() . ' (' . $campeao->getClasse() . ')';
+        $textoCentralizado = str_pad(substr($texto, 0, 28), 28, ' ', STR_PAD_BOTH);
+
         $linhas = [
-            "    ╔══════════════════════════════════════╗",
-            "    ║                                      ║",
-            "    ║         VITORIA DO TORNEIO!          ║",
-            "    ║                                      ║",
-            "    ║    {$campeao->getNome()} ({$campeao->getClasse()})     ║",
-            "    ║                                      ║",
-            "    ║         EH O CAMPEAO!                ║",
-            "    ║                                      ║",
-            "    ╚══════════════════════════════════════╝",
+            '  ______________________________',
+            ' / \                             \. ,',
+            '|   |                            |.,',
+            ' \_ |                            |.,',
+            '    |                            |.,',
+            '    |                            |.,',
+            '    |                            |.',
+            '    |                            |.',
+            '    |' . $textoCentralizado . '|',
+            '    |                            |.',
+            '    |                            |.',
+            '    |                            |.',
+            '    |                            |.',
+            '    |                            |.',
+            '    |                            |.',
+            '    |   _________________________|___',
+            '    |  /                            /.',
+            '    \_/____________________________/.',
         ];
 
         foreach ($linhas as $linha) {

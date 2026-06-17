@@ -24,21 +24,58 @@ class Mago extends Personagem
         return 'Mago';
     }
 
+    public function getNomeDefesa(): string
+    {
+        return 'Escudo Arcano';
+    }
+
+    public function ativarDefesa(): void
+    {
+        $this->defesaBuff = 2;
+    }
+
+    protected function getDadoAtaque(): int
+    {
+        return 10;
+    }
+
     public function getAtaques(): array
     {
         return [
-            ['nome' => 'Ataque Normal', 'multiplicador' => 1.0],
-            ['nome' => 'Bola de Fogo', 'multiplicador' => 2.5],
-            ['nome' => 'Raio', 'multiplicador' => 1.8],
+            new Ataque('Ataque Normal', 1.0),
+            new Ataque('Bola de Fogo', 2.5),
+            new Ataque('Raio', 1.8),
         ];
     }
 
-    public function atacar(Personagem $alvo, int $indiceAtaque = 0): int
+    public function getPoderEspecial(): array
     {
-        $ataques = $this->getAtaques();
-        $ataque = $ataques[$indiceAtaque] ?? $ataques[0];
-        $danoBruto = (int)($this->ataque * $ataque['multiplicador']) + random_int(1, 10);
-        $danoFinal = $alvo->defender($danoBruto);
+        return [
+            'nome' => 'Tempestade Arcana',
+            'descricao' => 'Dano mágico que ignora completamente a defesa',
+            'multiplicador' => 2.0,
+        ];
+    }
+
+    public function usarPoderEspecial(Personagem $alvo): int
+    {
+        $this->poderEspecialUsado = true;
+        $danoFinal = (int)($this->ataque * $this->getPoderEspecial()['multiplicador']) + random_int(1, $this->getDadoAtaque());
+        $danoFinal = max($danoFinal, 1);
+        $alvo->sofrerDanoDireto($danoFinal);
         return $danoFinal;
+    }
+
+    public function defender(int $dano): int
+    {
+        $defesaReal = $this->defesa * $this->defesaBuff;
+        $this->defesaBuff = 1;
+        $danoReduzido = max((int)($dano - $defesaReal), 1);
+        $danoReduzido = (int)($danoReduzido * 0.8);
+        $this->hp -= $danoReduzido;
+        if ($this->hp < 0) {
+            $this->hp = 0;
+        }
+        return $danoReduzido;
     }
 }

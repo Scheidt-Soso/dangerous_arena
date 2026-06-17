@@ -4,8 +4,6 @@ require_once 'Personagem.php';
 
 class Guerreiro extends Personagem
 {
-    private bool $posturaDefensiva = false;
-
     protected function calcularHpMaximo(): int
     {
         return 80 + ($this->level * 20);
@@ -26,37 +24,43 @@ class Guerreiro extends Personagem
         return 'Guerreiro';
     }
 
+    public function getNomeDefesa(): string
+    {
+        return 'Postura de Ferro';
+    }
+
+    public function ativarDefesa(): void
+    {
+        $this->defesaBuff = 1.5;
+    }
+
+    protected function getDadoAtaque(): int
+    {
+        return 8;
+    }
+
     public function getAtaques(): array
     {
         return [
-            ['nome' => 'Ataque Normal', 'multiplicador' => 1.0],
-            ['nome' => 'Golpe Pesado', 'multiplicador' => 2.0],
-            ['nome' => 'Corte Rapido', 'multiplicador' => 0.7],
+            new Ataque('Machadada', 0.8),
+            new Ataque('Espada de fogo', 1.7),
         ];
     }
 
-    public function ativarPosturaDefensiva(): void
+    public function getPoderEspecial(): array
     {
-        $this->posturaDefensiva = true;
+        return [
+            'nome' => 'Golpe de Fúria',
+            'descricao' => 'Ataque devastador que causa o dobro de dano',
+            'multiplicador' => 3.5,
+        ];
     }
 
-    public function defender(int $dano): int
+    public function usarPoderEspecial(Personagem $alvo): int
     {
-        $defesaReal = $this->defesa;
-        if ($this->posturaDefensiva) {
-            $defesaReal = (int)($defesaReal * 1.5);
-            $this->posturaDefensiva = false;
-        }
-        $danoReduzido = max($dano - $defesaReal, 1);
-        $this->hp -= $danoReduzido;
-        if ($this->hp < 0) {
-            $this->hp = 0;
-        }
-        return $danoReduzido;
-    }
-
-    public function estaEmPosturaDefensiva(): bool
-    {
-        return $this->posturaDefensiva;
+        $this->poderEspecialUsado = true;
+        $this->defesaBuff = 0.5;
+        $danoBruto = (int)($this->ataque * $this->getPoderEspecial()['multiplicador']) + random_int(1, $this->getDadoAtaque());
+        return $alvo->defender($danoBruto);
     }
 }

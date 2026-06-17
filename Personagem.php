@@ -1,5 +1,7 @@
 <?php
 
+require_once 'Ataque.php';
+
 abstract class Personagem
 {
     protected string $nome;
@@ -8,6 +10,9 @@ abstract class Personagem
     protected int $ataque;
     protected int $defesa;
     protected int $level;
+    protected int $xp;
+    protected int $defesaBuff;
+    protected bool $poderEspecialUsado;
 
     public function __construct(string $nome, int $level = 1)
     {
@@ -17,6 +22,9 @@ abstract class Personagem
         $this->hp = $this->hpMaximo;
         $this->ataque = $this->calcularAtaque();
         $this->defesa = $this->calcularDefesa();
+        $this->xp = 0;
+        $this->defesaBuff = 1;
+        $this->poderEspecialUsado = false;
     }
 
     abstract protected function calcularHpMaximo(): int;
@@ -27,16 +35,26 @@ abstract class Personagem
     public function getAtaques(): array
     {
         return [
-            ['nome' => 'Ataque Normal', 'multiplicador' => 1.0],
-            ['nome' => 'Ataque Forte', 'multiplicador' => 1.8],
+            new Ataque('Ataque Normal', 1.0),
+            new Ataque('Ataque Forte', 1.8),
         ];
+    }
+
+    public function getNomeDefesa(): string
+    {
+        return 'Defesa Padrão';
+    }
+
+    protected function getDadoAtaque(): int
+    {
+        return 6;
     }
 
     public function atacar(Personagem $alvo, int $indiceAtaque = 0): int
     {
         $ataques = $this->getAtaques();
         $ataque = $ataques[$indiceAtaque] ?? $ataques[0];
-        $danoBruto = (int)($this->ataque * $ataque['multiplicador']) + random_int(1, 6);
+        $danoBruto = (int)($this->ataque * $ataque->getMultiplicador()) + random_int(1, $this->getDadoAtaque());
         $danoFinal = $alvo->defender($danoBruto);
         return $danoFinal;
     }
@@ -89,5 +107,27 @@ abstract class Personagem
     public function __toString(): string
     {
         return "{$this->getClasse()} {$this->nome} | HP: {$this->hp}/{$this->hpMaximo} | ATK: {$this->ataque} | DEF: {$this->defesa} | LV: {$this->level}";
+    }
+
+    public function getXp(): int
+    {
+        return $this->xp;
+    }
+
+    public function gastarXp(int $quantidade): void
+    {
+        $this->xp = max($this->xp - $quantidade, 0);
+    }
+
+    public function recuperarHp(float $fracao): void
+    {
+        $this->hp = min($this->hp + (int)($this->hpMaximo * $fracao), $this->hpMaximo);
+    }
+
+    public function roubarXp(Personagem $alvo, int $quantidade): void
+    {
+        $roubado = min($quantidade, $alvo->xp);
+        $alvo->xp -= $roubado;
+        $this->xp += $roubado;
     }
 }
