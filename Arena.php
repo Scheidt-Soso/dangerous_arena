@@ -34,7 +34,7 @@ class Arena
         $this->log("    ╚══════════════════════════════════════╝");
         $this->log("");
 
-        $vencedor = $this->iniciarBatalha(3);
+        $vencedor = $this->iniciarBatalha(999);
 
         $campeao = $vencedor === 1 ? $this->p1 : $this->p2;
         $this->animacaoVitoria($campeao);
@@ -84,7 +84,7 @@ class Arena
         echo $this->barraVida($this->p2) . "\n\n";
 
         echo "--- Vez de {$atacante->getNome()} ({$atacante->getClasse()}) ---\n";
-        echo "HP: {$atacante->getHp()}/{$atacante->getHpMaximo()} | ATK: {$atacante->getAtaque()} | DEF: {$atacante->getDefesa()} ({$atacante->getNomeDefesa()})\n";
+        echo "HP: {$atacante->getHp()}/{$atacante->getHpMaximo()} | MANA: {$atacante->getMana()}/{$atacante->getManaMaximo()} | ATK: {$atacante->getAtaque()} | DEF: {$atacante->getDefesa()} ({$atacante->getNomeDefesa()})\n";
         echo "\n";
 
         $this->menuAcao($atacante, $defensor);
@@ -109,6 +109,7 @@ class Arena
             $this->menuAtaque($atacante, $defensor);
         } elseif ($escolha === '2') {
             $atacante->ativarDefesa();
+            $atacante->ganharMana(0.1);
             $this->log("{$atacante->getNome()} assumiu postura defensiva! Defesa aumentada!");
             echo "\n";
         } elseif ($escolha === '3') {
@@ -137,6 +138,9 @@ class Arena
         if ($dano > 0) {
             $this->log("{$atacante->getNome()} usou {$nomeAtaque} e causou {$dano} de dano em {$defensor->getNome()}!");
         }
+
+        $atacante->ganharMana($ataques[$escolha]->getMultiplicador());
+        $this->log("{$atacante->getNome()} ganhou mana! ({$atacante->getMana()}/{$atacante->getManaMaximo()})");
 
         echo "\n";
     }
@@ -174,7 +178,12 @@ class Arena
         $numBarras = (int)($p->getHp() / $p->getHpMaximo() * 20);
         $barra = str_repeat("█", $numBarras);
         $espaco = str_repeat(" ", 20 - $numBarras);
-        return "{$p->getNome()}: [{$barra}{$espaco}] {$p->getHp()}/{$p->getHpMaximo()}";
+
+        $numMana = (int)($p->getMana() / $p->getManaMaximo() * 10);
+        $barraMana = str_repeat("▌", $numMana);
+        $espacoMana = str_repeat(" ", 10 - $numMana);
+
+        return "{$p->getNome()}: [{$barra}{$espaco}] {$p->getHp()}/{$p->getHpMaximo()}  MP:[{$barraMana}{$espacoMana}] {$p->getMana()}%";
     }
 
     private function animacaoVitoria(Personagem $campeao): void

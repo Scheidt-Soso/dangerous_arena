@@ -11,8 +11,9 @@ abstract class Personagem
     protected int $defesa;
     protected int $level;
     protected int $xp;
-    protected int $defesaBuff;
-    protected bool $poderEspecialUsado;
+    protected float $defesaBuff;
+    protected int $mana;
+    protected int $manaMaximo;
 
     public function __construct(string $nome, int $level = 1)
     {
@@ -24,7 +25,8 @@ abstract class Personagem
         $this->defesa = $this->calcularDefesa();
         $this->xp = 0;
         $this->defesaBuff = 1;
-        $this->poderEspecialUsado = false;
+        $this->mana = 30;
+        $this->manaMaximo = 100;
     }
 
     abstract protected function calcularHpMaximo(): int;
@@ -61,7 +63,9 @@ abstract class Personagem
 
     public function defender(int $dano): int
     {
-        $danoReduzido = max($dano - $this->defesa, 1);
+        $defesaReal = (int)($this->defesa * $this->defesaBuff);
+        $this->defesaBuff = 1;
+        $danoReduzido = max($dano - $defesaReal, 1);
         $this->hp -= $danoReduzido;
         if ($this->hp < 0) {
             $this->hp = 0;
@@ -106,7 +110,58 @@ abstract class Personagem
 
     public function __toString(): string
     {
-        return "{$this->getClasse()} {$this->nome} | HP: {$this->hp}/{$this->hpMaximo} | ATK: {$this->ataque} | DEF: {$this->defesa} | LV: {$this->level}";
+        return "{$this->getClasse()} {$this->nome} | HP: {$this->hp}/{$this->hpMaximo} | MANA: {$this->mana}/{$this->manaMaximo} | ATK: {$this->ataque} | DEF: {$this->defesa} | LV: {$this->level}";
+    }
+
+    public function getMana(): int
+    {
+        return $this->mana;
+    }
+
+    public function getManaMaximo(): int
+    {
+        return $this->manaMaximo;
+    }
+
+    protected function getManaGanhoPorAtaque(): int
+    {
+        return 34;
+    }
+
+    public function ganharMana(float $multiplicador): void
+    {
+        $ganho = (int)(15 * $multiplicador);
+        $this->mana = min($this->mana + $ganho, $this->manaMaximo);
+    }
+
+    public function poderEspecialDisponivel(): bool
+    {
+        return $this->mana >= 80;
+    }
+
+    public function ativarDefesa(): void
+    {
+        $this->defesaBuff = 1;
+    }
+
+    public function getPoderEspecial(): array
+    {
+        return [
+            'nome' => 'Poder Especial',
+            'descricao' => '',
+            'multiplicador' => 1.0,
+        ];
+    }
+
+    public function usarPoderEspecial(Personagem $alvo): int
+    {
+        $this->mana = 0;
+        return 0;
+    }
+
+    public function sofrerDanoDireto(int $dano): void
+    {
+        $this->hp = max($this->hp - $dano, 0);
     }
 
     public function getXp(): int

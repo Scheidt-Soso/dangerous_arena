@@ -6,7 +6,7 @@ class Mago extends Personagem
 {
     protected function calcularHpMaximo(): int
     {
-        return 50 + ($this->level * 15);
+        return 100;
     }
 
     protected function calcularAtaque(): int
@@ -59,7 +59,7 @@ class Mago extends Personagem
 
     public function usarPoderEspecial(Personagem $alvo): int
     {
-        $this->poderEspecialUsado = true;
+        $this->mana = 0;
         $danoFinal = (int)($this->ataque * $this->getPoderEspecial()['multiplicador']) + random_int(1, $this->getDadoAtaque());
         $danoFinal = max($danoFinal, 1);
         $alvo->sofrerDanoDireto($danoFinal);

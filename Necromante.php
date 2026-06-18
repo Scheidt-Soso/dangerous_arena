@@ -6,7 +6,7 @@ class Necromante extends Personagem
 {
     protected function calcularHpMaximo(): int
     {
-        return 55 + ($this->level * 16);
+        return 100;
     }
 
     protected function calcularAtaque(): int
@@ -59,7 +59,7 @@ class Necromante extends Personagem
 
     public function usarPoderEspecial(Personagem $alvo): int
     {
-        $this->poderEspecialUsado = true;
+        $this->mana = 0;
         $cura = (int)($this->hpMaximo * 0.5);
         $this->hp = min($this->hp + $cura, $this->hpMaximo);
         $danoBruto = (int)($this->ataque * $this->getPoderEspecial()['multiplicador']) + random_int(1, $this->getDadoAtaque());

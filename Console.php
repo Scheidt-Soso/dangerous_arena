@@ -41,8 +41,19 @@ class Console
         echo "1 - Guerreiro\n";
         echo "2 - Mago\n";
         echo "3 - Necromante\n";
+        echo "0 - Ver descrição das classes\n";
 
-        $classe = self::lerOpcao("Digite o número do seu personagem: ", ['1', '2', '3']);
+        $classe = self::lerOpcao("Digite o número do seu personagem: ", ['1', '2', '3', '0']);
+
+        while ($classe === '0') {
+            self::mostrarDescricaoClasses();
+            echo "\nEscolha a classe:\n";
+            echo "1 - Guerreiro\n";
+            echo "2 - Mago\n";
+            echo "3 - Necromante\n";
+            echo "0 - Ver descrição das classes\n";
+            $classe = self::lerOpcao("Digite o número do seu personagem: ", ['1', '2', '3', '0']);
+        }
 
         echo "Escolha o nome do seu participante: ";
         $nome = trim(fgets(STDIN));
@@ -59,6 +70,39 @@ class Console
 
         echo PHP_EOL;
         return $personagem;
+    }
+
+    public static function mostrarDescricaoClasses(): void
+    {
+        self::limparTela();
+        $classes = [
+            new Guerreiro('Exemplo'),
+            new Mago('Exemplo'),
+            new Necromante('Exemplo'),
+        ];
+
+        foreach ($classes as $p) {
+            echo "════════════════════════════════════\n";
+            echo "  CLASSE: {$p->getClasse()}\n";
+            echo "────────────────────────────────────\n";
+            echo "  HP: {$p->getHpMaximo()} | ATK: {$p->getAtaque()} | DEF: {$p->getDefesa()}\n";
+            echo "────────────────────────────────────\n";
+            echo "  Defesa: {$p->getNomeDefesa()}\n";
+            echo "────────────────────────────────────\n";
+            echo "  Ataques:\n";
+            foreach ($p->getAtaques() as $i => $a) {
+                $dano = (int)($p->getAtaque() * $a->getMultiplicador());
+                echo "    " . ($i + 1) . ". {$a->getNome()} (dano: ~{$dano})\n";
+            }
+            $especial = $p->getPoderEspecial();
+            echo "────────────────────────────────────\n";
+            echo "  Poder Especial: {$especial['nome']}\n";
+            echo "  {$especial['descricao']}\n";
+            echo "════════════════════════════════════\n\n";
+        }
+
+        self::aguardarEnter("Pressione Enter para voltar...");
+        self::limparTela();
     }
 
     public static function exibirStatus(Personagem $p): void

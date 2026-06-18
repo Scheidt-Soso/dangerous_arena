@@ -6,7 +6,7 @@ class Guerreiro extends Personagem
 {
     protected function calcularHpMaximo(): int
     {
-        return 80 + ($this->level * 20);
+        return 100;
     }
 
     protected function calcularAtaque(): int
@@ -58,7 +58,7 @@ class Guerreiro extends Personagem
 
     public function usarPoderEspecial(Personagem $alvo): int
     {
-        $this->poderEspecialUsado = true;
+        $this->mana = 0;
         $this->defesaBuff = 0.5;
         $danoBruto = (int)($this->ataque * $this->getPoderEspecial()['multiplicador']) + random_int(1, $this->getDadoAtaque());
         return $alvo->defender($danoBruto);
