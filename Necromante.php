@@ -1,9 +1,12 @@
 <?php
 
 require_once 'Personagem.php';
+require_once 'EfeitoMaldicao.php';
 
 class Necromante extends Personagem
 {
+    private int $exercitoSombrioTurnos = 0;
+
     protected function calcularHpMaximo(): int
     {
         return 100;
@@ -26,7 +29,7 @@ class Necromante extends Personagem
 
     public function getNomeDefesa(): string
     {
-        return 'Sombra Protetora';
+        return 'Manto das Sombras';
     }
 
     public function ativarDefesa(): void
@@ -42,43 +45,89 @@ class Necromante extends Personagem
     public function getAtaques(): array
     {
         return [
-            new Ataque('Ataque Normal', 1.0),
-            new Ataque('Dreno Sombrio', 1.5),
-            new Ataque('Maldivão', 1.8),
+            new Ataque('Toque Sombrio', 1.5, 'Ataque sombrio simples.'),
+            new Ataque('Roubo de Vida', 1.2, 'Causa dano e recupera 50% do dano causado.'),
         ];
+    }
+
+    public function atacar(Personagem $alvo, int $indiceAtaque = 0): int
+    {
+        $dano = parent::atacar($alvo, $indiceAtaque);
+
+        if ($indiceAtaque === 1 && $dano > 0) {
+            $cura = (int)($dano * 0.5);
+            $this->recuperarHp($cura);
+            echo "  {$this->getNome()} recuperou {$cura} de HP (Roubo de Vida)!\n";
+        }
+
+        return $dano;
+    }
+
+    public function defender(int $dano, ?Personagem $atacante = null): int
+    {
+        if (random_int(1, 100) <= 30) {
+            $danoReduzido = (int)($dano * 0.5);
+            $this->hp -= $danoReduzido;
+            if ($this->hp < 0) {
+                $this->hp = 0;
+            }
+            echo "  Manto das Sombras reduziu o dano de {$dano} para {$danoReduzido}!\n";
+            return $danoReduzido;
+        }
+
+        return parent::defender($dano, $atacante);
     }
 
     public function getPoderEspecial(): array
     {
         return [
-            'nome' => 'Ritual Sombrio',
-            'descricao' => 'Recupera 50% do HP máximo e causa dano sombrio',
-            'multiplicador' => 2.0,
+            'nome' => 'Maldição da Dor',
+            'descricao' => 'Amaldiçoa o alvo por 3 turnos (8 de dano por turno, ignora defesa)',
         ];
     }
 
     public function usarPoderEspecial(Personagem $alvo): int
     {
-        $this->mana = 0;
-        $cura = (int)($this->hpMaximo * 0.5);
-        $this->hp = min($this->hp + $cura, $this->hpMaximo);
-        $danoBruto = (int)($this->ataque * $this->getPoderEspecial()['multiplicador']) + random_int(1, $this->getDadoAtaque());
-        return $alvo->defender($danoBruto);
+        parent::usarPoderEspecial($alvo);
+        $alvo->adicionarEfeito(new EfeitoMaldicao());
+        return 8;
     }
 
-    public function defender(int $dano): int
+    public function getHabilidadeTatica(): ?array
     {
-        if (random_int(1, 100) <= 30) {
-            return 0;
-        }
+        return [
+            'nome' => 'Exército Sombrio',
+            'descricao' => 'Invoca esqueletos por 3 turnos (5 de dano automático por turno)',
+        ];
+    }
 
-        $defesaReal = $this->defesa * $this->defesaBuff;
-        $this->defesaBuff = 1;
-        $danoReduzido = max((int)($dano - $defesaReal), 1);
-        $this->hp -= $danoReduzido;
-        if ($this->hp < 0) {
-            $this->hp = 0;
+    public function executarHabilidadeTatica(Personagem $alvo): string
+    {
+        $this->exercitoSombrioTurnos = 3;
+        return "{$this->getNome()} invocou o Exército Sombrio! Esqueletos atacarão por 3 turnos.";
+    }
+
+    public function getAcoesInicioTurno(Personagem $defensor): array
+    {
+        $logs = [];
+        if ($this->exercitoSombrioTurnos > 0) {
+            $defensor->sofrerDanoDireto(5);
+            $logs[] = "Esqueleto ataca! 5 de dano causado a {$defensor->getNome()}.";
+            $this->exercitoSombrioTurnos--;
+            if ($this->exercitoSombrioTurnos <= 0) {
+                $logs[] = "Os esqueletos desapareceram.";
+            }
         }
-        return $danoReduzido;
+        return $logs;
+    }
+
+    public function getEfeitosDescricao(): string
+    {
+        $descricao = parent::getEfeitosDescricao();
+        if ($this->exercitoSombrioTurnos > 0) {
+            $extra = "Exército Sombrio ({$this->exercitoSombrioTurnos} turnos)";
+            $descricao = $descricao === 'Nenhum' ? $extra : $descricao . ', ' . $extra;
+        }
+        return $descricao;
     }
 }

@@ -93,11 +93,21 @@ class Console
             foreach ($p->getAtaques() as $i => $a) {
                 $dano = (int)($p->getAtaque() * $a->getMultiplicador());
                 echo "    " . ($i + 1) . ". {$a->getNome()} (dano: ~{$dano})\n";
+                if ($a->getDescricao() !== '') {
+                    echo "       {$a->getDescricao()}\n";
+                }
             }
             $especial = $p->getPoderEspecial();
             echo "────────────────────────────────────\n";
             echo "  Poder Especial: {$especial['nome']}\n";
-            echo "  {$especial['descricao']}\n";
+            echo "  {$especial['descricao']} (Custo: " . Personagem::CUSTO_PODER_ESPECIAL . " mana)\n";
+
+            $tatica = $p->getHabilidadeTatica();
+            if ($tatica !== null) {
+                echo "────────────────────────────────────\n";
+                echo "  Habilidade Tática: {$tatica['nome']}\n";
+                echo "  {$tatica['descricao']}\n";
+            }
             echo "════════════════════════════════════\n\n";
         }
 

@@ -83,37 +83,93 @@ class Arena
         echo $this->barraVida($this->p1) . "\n";
         echo $this->barraVida($this->p2) . "\n\n";
 
-        echo "--- Vez de {$atacante->getNome()} ({$atacante->getClasse()}) ---\n";
-        echo "HP: {$atacante->getHp()}/{$atacante->getHpMaximo()} | MANA: {$atacante->getMana()}/{$atacante->getManaMaximo()} | ATK: {$atacante->getAtaque()} | DEF: {$atacante->getDefesa()} ({$atacante->getNomeDefesa()})\n";
-        echo "\n";
+        $logs = array_merge(
+            $atacante->processarEfeitos(),
+            $atacante->getAcoesInicioTurno($defensor)
+        );
 
+        foreach ($logs as $log) {
+            echo "  {$log}\n";
+        }
+
+        if (!$atacante->estaVivo()) {
+            $this->log("{$atacante->getNome()} sucumbiu aos efeitos!");
+            return;
+        }
+
+        if (!$defensor->estaVivo()) {
+            $this->log("{$defensor->getNome()} foi derrotado!");
+            return;
+        }
+
+        if ($atacante->estaParalisado()) {
+            echo "\n{$atacante->getNome()} está congelado e perdeu o turno!\n";
+            $atacante->setTurnosParalisado(0);
+            $atacante->removerEfeito('Congelado');
+            return;
+        }
+
+        echo "--- Vez de {$atacante->getNome()} ({$atacante->getClasse()}) ---\n";
+        echo "HP: {$atacante->getHp()}/{$atacante->getHpMaximo()} | MANA: {$atacante->getMana()}/{$atacante->getManaMaximo()} | ATK: {$atacante->getAtaque()} | DEF: {$atacante->getDefesa()} | {$atacante->getNomeDefesa()}\n";
+        echo "Efeitos ativos: {$atacante->getEfeitosDescricao()}\n";
+
+        if ($defensor->getEfeitosDescricao() !== 'Nenhum') {
+            echo "Efeitos no inimigo: {$defensor->getEfeitosDescricao()}\n";
+        }
+
+        echo "\n";
         $this->menuAcao($atacante, $defensor);
     }
 
     private function menuAcao(Personagem $atacante, Personagem $defensor): void
     {
-        echo "Escolha sua ação:\n";
-        echo "1 - Atacar\n";
-        echo "2 - Defender\n";
+        $opcoes = [];
 
-        $opcoes = ['1', '2'];
-        if ($atacante->poderEspecialDisponivel()) {
+        echo "Escolha sua ação:\n";
+
+        $opcoes[] = '1';
+        echo "1 - Atacar\n";
+
+        $opcoes[] = '2';
+        echo "2 - Defender ({$atacante->getNomeDefesa()})\n";
+
+        $temPoder = $atacante->poderEspecialDisponivel();
+        $tatica = $atacante->getHabilidadeTatica();
+        $temTatica = $tatica !== null;
+
+        if ($temPoder) {
             $poder = $atacante->getPoderEspecial();
-            echo "3 - Poder Especial: {$poder['nome']} ({$poder['descricao']})\n";
+            echo "3 - {$poder['nome']}: {$poder['descricao']}\n";
             $opcoes[] = '3';
+        }
+
+        if ($temTatica) {
+            $num = $temPoder ? '4' : '3';
+            echo "{$num} - {$tatica['nome']}: {$tatica['descricao']}\n";
+            $opcoes[] = $num;
         }
 
         $escolha = Console::lerOpcao("Digite o numero: ", $opcoes);
 
-        if ($escolha === '1') {
-            $this->menuAtaque($atacante, $defensor);
-        } elseif ($escolha === '2') {
-            $atacante->ativarDefesa();
-            $atacante->ganharMana(0.1);
-            $this->log("{$atacante->getNome()} assumiu postura defensiva! Defesa aumentada!");
-            echo "\n";
-        } elseif ($escolha === '3') {
-            $this->executarPoderEspecial($atacante, $defensor);
+        switch ($escolha) {
+            case '1':
+                $this->menuAtaque($atacante, $defensor);
+                break;
+            case '2':
+                $atacante->ativarDefesa();
+                $atacante->ganharMana(0.1);
+                $this->log("{$atacante->getNome()} assumiu {$atacante->getNomeDefesa()}!");
+                break;
+            case '3':
+                if ($temPoder) {
+                    $this->executarPoderEspecial($atacante, $defensor);
+                } else {
+                    $this->executarHabilidadeTatica($atacante, $defensor);
+                }
+                break;
+            case '4':
+                $this->executarHabilidadeTatica($atacante, $defensor);
+                break;
         }
     }
 
@@ -126,6 +182,9 @@ class Arena
         foreach ($ataques as $i => $ataque) {
             $danoEstimado = (int)($atacante->getAtaque() * $ataque->getMultiplicador());
             echo ($i + 1) . " - {$ataque->getNome()} (dano: ~{$danoEstimado})\n";
+            if ($ataque->getDescricao() !== '') {
+                echo "   {$ataque->getDescricao()}\n";
+            }
         }
 
         $opcoes = range(1, $qtd);
@@ -147,12 +206,23 @@ class Arena
 
     private function executarPoderEspecial(Personagem $atacante, Personagem $defensor): void
     {
-        $poder = $atacante->getPoderEspecial();
-        $dano = $atacante->usarPoderEspecial($defensor);
-        $this->log("{$atacante->getNome()} usou {$poder['nome']}!");
-        if ($dano > 0) {
-            $this->log("Causou {$dano} de dano em {$defensor->getNome()}!");
+        try {
+            $poder = $atacante->getPoderEspecial();
+            $dano = $atacante->usarPoderEspecial($defensor);
+            $this->log("{$atacante->getNome()} usou {$poder['nome']}!");
+            if ($dano > 0) {
+                $this->log("Causou {$dano} de dano em {$defensor->getNome()}!");
+            }
+        } catch (ManaInsuficienteException $e) {
+            $this->log("{$atacante->getNome()} tentou usar o poder especial, mas " . $e->getMessage());
         }
+        echo "\n";
+    }
+
+    private function executarHabilidadeTatica(Personagem $atacante, Personagem $defensor): void
+    {
+        $mensagem = $atacante->executarHabilidadeTatica($defensor);
+        $this->log($mensagem);
         echo "\n";
     }
 

@@ -1,19 +1,25 @@
 <?php
 
 require_once 'Ataque.php';
+require_once 'ManaInsuficienteException.php';
+require_once 'Efeito.php';
 
 abstract class Personagem
 {
+    public const CUSTO_PODER_ESPECIAL = 80;
+    public const REGENERACAO_MANA_BASE = 15;
+
     protected string $nome;
     protected int $hp;
     protected int $hpMaximo;
     protected int $ataque;
     protected int $defesa;
     protected int $level;
-    protected int $xp;
     protected float $defesaBuff;
     protected int $mana;
     protected int $manaMaximo;
+    protected int $turnosParalisado = 0;
+    protected array $efeitos = [];
 
     public function __construct(string $nome, int $level = 1)
     {
@@ -23,7 +29,6 @@ abstract class Personagem
         $this->hp = $this->hpMaximo;
         $this->ataque = $this->calcularAtaque();
         $this->defesa = $this->calcularDefesa();
-        $this->xp = 0;
         $this->defesaBuff = 1;
         $this->mana = 30;
         $this->manaMaximo = 100;
@@ -56,16 +61,16 @@ abstract class Personagem
     {
         $ataques = $this->getAtaques();
         $ataque = $ataques[$indiceAtaque] ?? $ataques[0];
-        $danoBruto = (int)($this->ataque * $ataque->getMultiplicador()) + random_int(1, $this->getDadoAtaque());
-        $danoFinal = $alvo->defender($danoBruto);
+        $danoBruto = (int)($this->getAtaque() * $ataque->getMultiplicador()) + random_int(1, $this->getDadoAtaque());
+        $danoFinal = $alvo->defender($danoBruto, $this);
         return $danoFinal;
     }
 
-    public function defender(int $dano): int
+    public function defender(int $dano, ?Personagem $atacante = null): int
     {
-        $defesaReal = (int)($this->defesa * $this->defesaBuff);
+        $defesaReal = (int)($this->getDefesa() * $this->defesaBuff);
         $this->defesaBuff = 1;
-        $danoReduzido = max($dano - $defesaReal, 1);
+        $danoReduzido = max($dano - $defesaReal, 0);
         $this->hp -= $danoReduzido;
         if ($this->hp < 0) {
             $this->hp = 0;
@@ -110,7 +115,12 @@ abstract class Personagem
 
     public function __toString(): string
     {
-        return "{$this->getClasse()} {$this->nome} | HP: {$this->hp}/{$this->hpMaximo} | MANA: {$this->mana}/{$this->manaMaximo} | ATK: {$this->ataque} | DEF: {$this->defesa} | LV: {$this->level}";
+        $efeitosStr = '';
+        if (!empty($this->efeitos)) {
+            $nomes = array_map(fn(Efeito $e) => $e->getNome(), $this->efeitos);
+            $efeitosStr = ' | EFEITOS: ' . implode(', ', $nomes);
+        }
+        return "{$this->getClasse()} {$this->nome} | HP: {$this->hp}/{$this->hpMaximo} | MANA: {$this->mana}/{$this->manaMaximo} | ATK: {$this->getAtaque()} | DEF: {$this->getDefesa()} | LV: {$this->level}{$efeitosStr}";
     }
 
     public function getMana(): int
@@ -123,40 +133,49 @@ abstract class Personagem
         return $this->manaMaximo;
     }
 
-    protected function getManaGanhoPorAtaque(): int
-    {
-        return 34;
-    }
-
     public function ganharMana(float $multiplicador): void
     {
-        $ganho = (int)(15 * $multiplicador);
+        $ganho = (int)(self::REGENERACAO_MANA_BASE * $multiplicador);
         $this->mana = min($this->mana + $ganho, $this->manaMaximo);
+    }
+
+    public function gastarMana(int $quantidade): void
+    {
+        $this->mana = max($this->mana - $quantidade, 0);
     }
 
     public function poderEspecialDisponivel(): bool
     {
-        return $this->mana >= 80;
+        return $this->mana >= self::CUSTO_PODER_ESPECIAL;
     }
 
-    public function ativarDefesa(): void
-    {
-        $this->defesaBuff = 1;
-    }
+    abstract public function ativarDefesa(): void;
 
     public function getPoderEspecial(): array
     {
         return [
             'nome' => 'Poder Especial',
             'descricao' => '',
-            'multiplicador' => 1.0,
         ];
     }
 
     public function usarPoderEspecial(Personagem $alvo): int
     {
-        $this->mana = 0;
+        if ($this->mana < static::CUSTO_PODER_ESPECIAL) {
+            throw new ManaInsuficienteException();
+        }
+        $this->mana -= static::CUSTO_PODER_ESPECIAL;
         return 0;
+    }
+
+    public function getHabilidadeTatica(): ?array
+    {
+        return null;
+    }
+
+    public function executarHabilidadeTatica(Personagem $alvo): string
+    {
+        return '';
     }
 
     public function sofrerDanoDireto(int $dano): void
@@ -164,25 +183,92 @@ abstract class Personagem
         $this->hp = max($this->hp - $dano, 0);
     }
 
-    public function getXp(): int
+    public function recuperarHp(int $quantidade): void
     {
-        return $this->xp;
+        $this->hp = min($this->hp + $quantidade, $this->hpMaximo);
     }
 
-    public function gastarXp(int $quantidade): void
+    public function setTurnosParalisado(int $t): void
     {
-        $this->xp = max($this->xp - $quantidade, 0);
+        $this->turnosParalisado = $t;
     }
 
-    public function recuperarHp(float $fracao): void
+    public function estaParalisado(): bool
     {
-        $this->hp = min($this->hp + (int)($this->hpMaximo * $fracao), $this->hpMaximo);
+        return $this->turnosParalisado > 0;
     }
 
-    public function roubarXp(Personagem $alvo, int $quantidade): void
+    public function modificarAtaque(int $delta): void
     {
-        $roubado = min($quantidade, $alvo->xp);
-        $alvo->xp -= $roubado;
-        $this->xp += $roubado;
+        $this->ataque += $delta;
+    }
+
+    public function modificarDefesa(int $delta): void
+    {
+        $this->defesa = max($this->defesa + $delta, 0);
+    }
+
+    public function adicionarEfeito(Efeito $e): void
+    {
+        foreach ($this->efeitos as $existente) {
+            if ($existente->getNome() === $e->getNome()) {
+                return;
+            }
+        }
+        $this->efeitos[] = $e;
+        $e->aplicar($this);
+    }
+
+    public function removerEfeito(string $nome): void
+    {
+        foreach ($this->efeitos as $i => $e) {
+            if ($e->getNome() === $nome) {
+                $e->remover($this);
+                unset($this->efeitos[$i]);
+                $this->efeitos = array_values($this->efeitos);
+                return;
+            }
+        }
+    }
+
+    public function processarEfeitos(): array
+    {
+        $logs = [];
+        foreach ($this->efeitos as $i => $efeito) {
+            $log = $efeito->processarTurno($this);
+            if ($log !== null) {
+                $logs[] = $log;
+            }
+            $efeito->decrementar();
+            if ($efeito->expirado()) {
+                $efeito->remover($this);
+                $logs[] = "Efeito '{$efeito->getNome()}' em {$this->getNome()} expirou.";
+                unset($this->efeitos[$i]);
+            }
+        }
+        $this->efeitos = array_values($this->efeitos);
+        return $logs;
+    }
+
+    public function getEfeitos(): array
+    {
+        return $this->efeitos;
+    }
+
+    public function getEfeitosDescricao(): string
+    {
+        if (empty($this->efeitos)) {
+            return 'Nenhum';
+        }
+        $partes = [];
+        foreach ($this->efeitos as $e) {
+            $partes[] = $e->getNome() . ' (' . $e->getTurnosRestantes() . ' turnos)';
+        }
+        return implode(', ', $partes);
+    }
+
+    public function getAcoesInicioTurno(Personagem $defensor): array
+    {
+        return [];
     }
 }

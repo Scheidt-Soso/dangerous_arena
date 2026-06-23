@@ -1,6 +1,8 @@
 <?php
 
 require_once 'Personagem.php';
+require_once 'EfeitoDebuffDefesa.php';
+require_once 'EfeitoBuffGritoGuerra.php';
 
 class Guerreiro extends Personagem
 {
@@ -26,12 +28,12 @@ class Guerreiro extends Personagem
 
     public function getNomeDefesa(): string
     {
-        return 'Postura de Ferro';
+        return 'Postura Defensiva';
     }
 
     public function ativarDefesa(): void
     {
-        $this->defesaBuff = 1.5;
+        $this->defesaBuff = 2.0;
     }
 
     protected function getDadoAtaque(): int
@@ -42,25 +44,49 @@ class Guerreiro extends Personagem
     public function getAtaques(): array
     {
         return [
-            new Ataque('Machadada', 0.8),
-            new Ataque('Espada de fogo', 1.7),
+            new Ataque('Golpe Pesado', 1.8, 'Ataque físico forte.'),
+            new Ataque('Impacto Sísmico', 1.2, 'Reduz a defesa do alvo em 5 por 2 turnos.'),
         ];
+    }
+
+    public function atacar(Personagem $alvo, int $indiceAtaque = 0): int
+    {
+        $dano = parent::atacar($alvo, $indiceAtaque);
+
+        if ($indiceAtaque === 1) {
+            $alvo->adicionarEfeito(new EfeitoDebuffDefesa());
+        }
+
+        return $dano;
+    }
+
+    public function defender(int $dano, ?Personagem $atacante = null): int
+    {
+        $danoFinal = parent::defender($dano, $atacante);
+
+        if ($atacante !== null && $danoFinal > 0) {
+            $danoRefletido = (int)($danoFinal * 0.5);
+            if ($danoRefletido > 0) {
+                $atacante->sofrerDanoDireto($danoRefletido);
+                echo "  ⚔ {$this->getNome()} refletiu {$danoRefletido} de dano com Vingança!\n";
+            }
+        }
+
+        return $danoFinal;
     }
 
     public function getPoderEspecial(): array
     {
         return [
-            'nome' => 'Golpe de Fúria',
-            'descricao' => 'Ataque devastador que causa o dobro de dano',
-            'multiplicador' => 3.5,
+            'nome' => 'Grito de Guerra',
+            'descricao' => 'Aumenta ataque em 10 e defesa em 5 por 3 turnos',
         ];
     }
 
     public function usarPoderEspecial(Personagem $alvo): int
     {
-        $this->mana = 0;
-        $this->defesaBuff = 0.5;
-        $danoBruto = (int)($this->ataque * $this->getPoderEspecial()['multiplicador']) + random_int(1, $this->getDadoAtaque());
-        return $alvo->defender($danoBruto);
+        parent::usarPoderEspecial($alvo);
+        $this->adicionarEfeito(new EfeitoBuffGritoGuerra());
+        return 0;
     }
 }
