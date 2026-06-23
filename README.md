@@ -95,7 +95,7 @@ Perfil **desgaste**: dano contínuo, sustentação e invocação.
 | Ataque 2 | Roubo de Vida (1.2×) | Recupera 50% do dano causado como HP |
 | Defesa | Manto das Sombras | `defesaBuff = 1.5` — 30% de chance de reduzir dano à metade |
 | Poder Especial | Maldição da Dor (80 mana) | 8 de dano por turno durante 3 turnos (ignora defesa) |
-| Tática | Exército Sombrio | Esqueletos causam 5 de dano automático por turno durante 3 turnos |
+| Tática | Exército Sombrio | Causa 5 de dano imediato + esqueletos por mais 2 turnos (5 de dano automático por turno) |
 
 ---
 
@@ -127,7 +127,7 @@ Os efeitos são aplicados por ataques e habilidades. Todos possuem duração def
 | Grito de Guerra (ATK +10, DEF +5) | 3 turnos | Grito de Guerra |
 | Congelado (perde o turno) | 1 turno | Prisão de Gelo |
 | Maldição da Dor (8 de dano/turno) | 3 turnos | Maldição da Dor |
-| Exército Sombrio (5 de dano/turno) | 3 turnos | Exército Sombrio |
+| Exército Sombrio (5 de dano/turno) | 3 ativações (imediato + 2 turnos) | Exército Sombrio |
 
 ---
 
@@ -135,21 +135,27 @@ Os efeitos são aplicados por ataques e habilidades. Todos possuem duração def
 
 ```
 projeto/
-├── index.php                  # Ponto de entrada
-├── Personagem.php             # Classe abstrata base
-├── Guerreiro.php              # Classe concreta
-├── Mago.php                   # Classe concreta
-├── Necromante.php             # Classe concreta
-├── Ataque.php                 # Objeto de ataque (nome, descrição, multiplicador)
-├── Arena.php                  # Gerenciamento do combate (turnos, menu, logs)
-├── Console.php                # Interface com o terminal
-├── ManaInsuficienteException.php  # Exceção personalizada
-├── Efeito.php                 # Classe abstrata para efeitos
-├── EfeitoDebuffDefesa.php
-├── EfeitoBuffGritoGuerra.php
-├── EfeitoParalisia.php
-├── EfeitoMaldicao.php
-└── README.md
+├── index.php                      # Ponto de entrada
+├── README.md
+└── src/
+    ├── Characters/
+    │   ├── Personagem.php         # Classe abstrata base
+    │   ├── Guerreiro.php          # Classe concreta
+    │   ├── Mago.php               # Classe concreta
+    │   └── Necromante.php         # Classe concreta
+    ├── Effects/
+    │   ├── Efeito.php             # Classe abstrata para efeitos
+    │   ├── EfeitoDebuffDefesa.php
+    │   ├── EfeitoBuffGritoGuerra.php
+    │   ├── EfeitoParalisia.php
+    │   └── EfeitoMaldicao.php
+    ├── Combat/
+    │   ├── Arena.php              # Gerenciamento do combate (turnos, menu, logs)
+    │   └── Ataque.php             # Objeto de ataque (nome, descrição, multiplicador)
+    ├── Exceptions/
+    │   └── ManaInsuficienteException.php  # Exceção personalizada
+    └── Interface/
+        └── Console.php            # Interface com o terminal
 ```
 
 Princípios aplicados:

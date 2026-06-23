@@ -1,9 +1,8 @@
 <?php
 
-require_once 'Console.php';
-require_once 'Arena.php';
+require_once __DIR__ . '/src/Interface/Console.php';
+require_once __DIR__ . '/src/Combat/Arena.php';
 
-// --- Execução principal ---
 Console::menuPrincipal();
 
 $p1 = Console::criarPersonagem(1);

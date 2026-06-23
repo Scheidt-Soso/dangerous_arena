@@ -1,8 +1,8 @@
 <?php
 
-require_once 'Personagem.php';
-require_once 'EfeitoDebuffDefesa.php';
-require_once 'EfeitoBuffGritoGuerra.php';
+require_once __DIR__ . '/Personagem.php';
+require_once __DIR__ . '/../Effects/EfeitoDebuffDefesa.php';
+require_once __DIR__ . '/../Effects/EfeitoBuffGritoGuerra.php';
 
 class Guerreiro extends Personagem
 {
@@ -68,7 +68,7 @@ class Guerreiro extends Personagem
             $danoRefletido = (int)($danoFinal * 0.5);
             if ($danoRefletido > 0) {
                 $atacante->sofrerDanoDireto($danoRefletido);
-                echo "  ⚔ {$this->getNome()} refletiu {$danoRefletido} de dano com Vingança!\n";
+                $this->addMensagem("⚔ {$this->getNome()} refletiu {$danoRefletido} de dano com Vingança!");
             }
         }
 

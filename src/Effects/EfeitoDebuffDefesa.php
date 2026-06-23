@@ -1,6 +1,6 @@
 <?php
 
-require_once 'Efeito.php';
+require_once __DIR__ . '/Efeito.php';
 
 class EfeitoDebuffDefesa extends Efeito
 {

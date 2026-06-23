@@ -1,8 +1,8 @@
 <?php
 
-require_once 'Ataque.php';
-require_once 'ManaInsuficienteException.php';
-require_once 'Efeito.php';
+require_once __DIR__ . '/../Combat/Ataque.php';
+require_once __DIR__ . '/../Exceptions/ManaInsuficienteException.php';
+require_once __DIR__ . '/../Effects/Efeito.php';
 
 abstract class Personagem
 {
@@ -20,6 +20,7 @@ abstract class Personagem
     protected int $manaMaximo;
     protected int $turnosParalisado = 0;
     protected array $efeitos = [];
+    protected array $mensagens = [];
 
     public function __construct(string $nome, int $level = 1)
     {
@@ -265,6 +266,18 @@ abstract class Personagem
             $partes[] = $e->getNome() . ' (' . $e->getTurnosRestantes() . ' turnos)';
         }
         return implode(', ', $partes);
+    }
+
+    public function addMensagem(string $msg): void
+    {
+        $this->mensagens[] = $msg;
+    }
+
+    public function getMensagens(): array
+    {
+        $msgs = $this->mensagens;
+        $this->mensagens = [];
+        return $msgs;
     }
 
     public function getAcoesInicioTurno(Personagem $defensor): array

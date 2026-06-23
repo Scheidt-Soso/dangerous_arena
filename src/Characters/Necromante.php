@@ -1,7 +1,7 @@
 <?php
 
-require_once 'Personagem.php';
-require_once 'EfeitoMaldicao.php';
+require_once __DIR__ . '/Personagem.php';
+require_once __DIR__ . '/../Effects/EfeitoMaldicao.php';
 
 class Necromante extends Personagem
 {
@@ -57,7 +57,7 @@ class Necromante extends Personagem
         if ($indiceAtaque === 1 && $dano > 0) {
             $cura = (int)($dano * 0.5);
             $this->recuperarHp($cura);
-            echo "  {$this->getNome()} recuperou {$cura} de HP (Roubo de Vida)!\n";
+            $this->addMensagem("{$this->getNome()} recuperou {$cura} de HP (Roubo de Vida)!");
         }
 
         return $dano;
@@ -71,7 +71,7 @@ class Necromante extends Personagem
             if ($this->hp < 0) {
                 $this->hp = 0;
             }
-            echo "  Manto das Sombras reduziu o dano de {$dano} para {$danoReduzido}!\n";
+            $this->addMensagem("Manto das Sombras reduziu o dano de {$dano} para {$danoReduzido}!");
             return $danoReduzido;
         }
 
@@ -97,14 +97,15 @@ class Necromante extends Personagem
     {
         return [
             'nome' => 'Exército Sombrio',
-            'descricao' => 'Invoca esqueletos por 3 turnos (5 de dano automático por turno)',
+            'descricao' => 'Causa 5 de dano imediato e invoca esqueletos por mais 2 turnos (5 de dano automático por turno)',
         ];
     }
 
     public function executarHabilidadeTatica(Personagem $alvo): string
     {
-        $this->exercitoSombrioTurnos = 3;
-        return "{$this->getNome()} invocou o Exército Sombrio! Esqueletos atacarão por 3 turnos.";
+        $this->exercitoSombrioTurnos = 2;
+        $alvo->sofrerDanoDireto(5);
+        return "{$this->getNome()} invocou o Exército Sombrio! 5 de dano imediato, esqueletos atacarão por mais 2 turnos.";
     }
 
     public function getAcoesInicioTurno(Personagem $defensor): array

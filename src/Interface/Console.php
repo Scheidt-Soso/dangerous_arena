@@ -1,8 +1,8 @@
 <?php
 
-require_once 'Guerreiro.php';
-require_once 'Mago.php';
-require_once 'Necromante.php';
+require_once __DIR__ . '/../Characters/Guerreiro.php';
+require_once __DIR__ . '/../Characters/Mago.php';
+require_once __DIR__ . '/../Characters/Necromante.php';
 
 class Console
 {

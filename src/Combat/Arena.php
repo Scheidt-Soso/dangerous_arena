@@ -1,6 +1,6 @@
 <?php
 
-require_once 'Console.php';
+require_once __DIR__ . '/../Interface/Console.php';
 
 class Arena
 {
@@ -62,6 +62,9 @@ class Arena
             $this->log("{$this->p2->getNome()} foi derrotado!");
             return;
         }
+        if (!$this->p1->estaVivo()) {
+            return;
+        }
 
         Console::aguardarEnter("\nPressione Enter para passar o controle...");
         Console::limparTela();
@@ -69,6 +72,9 @@ class Arena
         $this->executarTurnoJogador($this->p2, $this->p1);
         if (!$this->p1->estaVivo()) {
             $this->log("{$this->p1->getNome()} foi derrotado!");
+            return;
+        }
+        if (!$this->p2->estaVivo()) {
             return;
         }
 
@@ -82,6 +88,8 @@ class Arena
         echo "--- Turno {$this->turno} ---\n\n";
         echo $this->barraVida($this->p1) . "\n";
         echo $this->barraVida($this->p2) . "\n\n";
+
+        $paralisado = $atacante->estaParalisado();
 
         $logs = array_merge(
             $atacante->processarEfeitos(),
@@ -102,10 +110,8 @@ class Arena
             return;
         }
 
-        if ($atacante->estaParalisado()) {
+        if ($paralisado) {
             echo "\n{$atacante->getNome()} está congelado e perdeu o turno!\n";
-            $atacante->setTurnosParalisado(0);
-            $atacante->removerEfeito('Congelado');
             return;
         }
 
@@ -119,6 +125,10 @@ class Arena
 
         echo "\n";
         $this->menuAcao($atacante, $defensor);
+
+        if (!$atacante->estaVivo()) {
+            $this->log("{$atacante->getNome()} foi derrotado!");
+        }
     }
 
     private function menuAcao(Personagem $atacante, Personagem $defensor): void
@@ -193,6 +203,13 @@ class Arena
 
         $dano = $atacante->atacar($defensor, $escolha);
         $nomeAtaque = $ataques[$escolha]->getNome();
+
+        foreach ($defensor->getMensagens() as $msg) {
+            echo "  {$msg}\n";
+        }
+        foreach ($atacante->getMensagens() as $msg) {
+            echo "  {$msg}\n";
+        }
 
         if ($dano > 0) {
             $this->log("{$atacante->getNome()} usou {$nomeAtaque} e causou {$dano} de dano em {$defensor->getNome()}!");

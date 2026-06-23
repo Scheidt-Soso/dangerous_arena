@@ -1,7 +1,7 @@
 <?php
 
-require_once 'Personagem.php';
-require_once 'EfeitoParalisia.php';
+require_once __DIR__ . '/Personagem.php';
+require_once __DIR__ . '/../Effects/EfeitoParalisia.php';
 
 class Mago extends Personagem
 {
